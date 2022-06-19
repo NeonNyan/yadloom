@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import copy
+import json
+import logging
+import subprocess
+import sys
+import argparse
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("profile")
+
+try:
+    args = parser.parse_intermixed_args().__dict__
+except:
+    args = {'profile': 'doom'}
+
+
+config = {}
+with open(Path("~/.yadloom.json").expanduser().absolute()) as f:
+    config.update(json.load(f))
+    config['wadDir'] = Path(config['wadDir']).expanduser().resolve()
+wad_dir = config['wadDir']
+
+def parse_profiles(p):
+    p = copy.deepcopy(p)
+    for name,doom in p.items():
+        doom['name'] = name
+        for k,v in doom.items():
+            if 'wad' in k or 'file' in k:
+                if isinstance(v, list):
+                    doom[k] = [f"{wad_dir}/{vv}" for vv in v]
+                else:
+                    doom[k] = f"{wad_dir}/{v}"
+    return p
+
+def profile_to_cmdline(p:dict):
+    r = ''
+    p = copy.deepcopy(p)
+    for k,v in p.items():
+        if k == 'name': continue
+        if isinstance(v, list):
+            r+= f" -{k} " +  ' '.join(['\"' + vv + '\"' for vv in v])
+        else:
+            r+= f" -{k} \"{v}\""
+    return r
+
+profiles = config['profiles']
+
+parsed_profiles = parse_profiles(profiles)
+active_profile = parsed_profiles.get(args['profile'])
+
+logging.debug(args)
+logging.debug(json.dumps(parsed_profiles, indent=2))
+logging.debug(f"active profile: {json.dumps(active_profile, indent=2)}")
+gzdoom_args = profile_to_cmdline(active_profile)
+logging.debug(gzdoom_args)
+
+subprocess.call(f'gzdoom {gzdoom_args}', shell=True)

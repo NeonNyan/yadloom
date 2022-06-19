@@ -1,0 +1,18 @@
+{
+  "wadDir": "~/Library/Doom Wads",
+  "profiles": {
+    "doom": {
+      "iwad": "DOOM.WAD"
+    },
+    "doom2": {
+      "iwad": "DOOM2.WAD"
+    },
+    "plutonia": {
+      "iwad": "PLUTONIA.WAD"
+    },
+    "tnt": {
+      "iwad": "PLUTONIA.WAD",
+      "file": "TNT.WAD"
+    }
+  }
+}
