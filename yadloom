@@ -6,20 +6,20 @@ import json
 import logging
 import subprocess
 import sys
-import argparse
 logging.basicConfig(
     level=logging.DEBUG,
     handlers=[logging.StreamHandler(sys.stderr)]
 )
 
-parser = argparse.ArgumentParser()
 
-parser.add_argument("profile")
-
+gzdoom_args = ""
 try:
-    args = parser.parse_intermixed_args().__dict__
-except:
-    args = {'profile': 'doom'}
+    args = {'profile': sys.argv[1]}
+    gzdoom_args = " ".join(sys.argv[2:])
+except Exception as ex:
+    logging.error(f"Usage: {sys.argv[0]} PROFILENAME [GZDOOM_ARGS]")
+    exit(-1)
+
 
 
 config = {}
@@ -43,12 +43,16 @@ def parse_profiles(p):
 def profile_to_cmdline(p:dict):
     r = ''
     p = copy.deepcopy(p)
+    def __transform_keyname(k):
+        if k[0] in ["+", "-"]:
+            return f"{k}"
+        return f"-{k}"
     for k,v in p.items():
         if k == 'name': continue
         if isinstance(v, list):
-            r+= f" -{k} " +  ' '.join(['\"' + vv + '\"' for vv in v])
+            r+= f" {__transform_keyname(k)} " +  ' '.join(['\"' + vv + '\"' for vv in v])
         else:
-            r+= f" -{k} \"{v}\""
+            r+= f" {__transform_keyname(k)} \"{v}\""
     return r
 
 profiles = config['profiles']
@@ -59,7 +63,8 @@ active_profile = parsed_profiles.get(args['profile'])
 logging.debug(args)
 logging.debug(json.dumps(parsed_profiles, indent=2))
 logging.debug(f"active profile: {json.dumps(active_profile, indent=2)}")
-gzdoom_args = profile_to_cmdline(active_profile)
+logging.debug(f"gzdoom_args: {gzdoom_args}")
+gzdoom_args = profile_to_cmdline(active_profile) + f" {gzdoom_args}"
 logging.debug(gzdoom_args)
 
 subprocess.call(f'gzdoom {gzdoom_args}', shell=True)
