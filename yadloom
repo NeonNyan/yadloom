@@ -22,22 +22,34 @@ except Exception as ex:
 
 
 
-config = {}
+CONFIG = {}
 with open(Path("~/.yadloom.json").expanduser().absolute()) as f:
-    config.update(json.load(f))
-    config['wadDir'] = Path(config['wadDir']).expanduser().resolve()
-wad_dir = config['wadDir']
+    CONFIG.update(json.load(f))
+    CONFIG['wadDir'] = Path(CONFIG['wadDir']).expanduser().resolve()
+
+WAD_DIR = CONFIG['wadDir']
+WAD_LISTS = CONFIG.get('wadLists', {})
 
 def parse_profiles(p):
+    def _resolve_wad(w) -> list:
+        r =  [f"{WAD_DIR}/{w}"]
+        if w.startswith("$") and w[1:] in WAD_LISTS:
+            wl = WAD_LISTS[w[1:]]
+            r =  [f"{WAD_DIR}/{ww}" for ww in wl]
+        return r
+
     p = copy.deepcopy(p)
     for name,doom in p.items():
         doom['name'] = name
         for k,v in doom.items():
             if 'wad' in k or 'file' in k:
                 if isinstance(v, list):
-                    doom[k] = [f"{wad_dir}/{vv}" for vv in v]
+                    kv = []
+                    for vv in v:
+                        kv += _resolve_wad(vv)
+                    doom[k] = kv
                 else:
-                    doom[k] = f"{wad_dir}/{v}"
+                    doom[k] = f"{WAD_DIR}/{v}"
     return p
 
 def profile_to_cmdline(p:dict):
@@ -55,7 +67,7 @@ def profile_to_cmdline(p:dict):
             r+= f" {__transform_keyname(k)} \"{v}\""
     return r
 
-profiles = config['profiles']
+profiles = CONFIG['profiles']
 
 parsed_profiles = parse_profiles(profiles)
 active_profile = parsed_profiles.get(args['profile'])
@@ -67,4 +79,4 @@ logging.debug(f"gzdoom_args: {gzdoom_args}")
 gzdoom_args = profile_to_cmdline(active_profile) + f" {gzdoom_args}"
 logging.debug(gzdoom_args)
 
-subprocess.call(f'gzdoom {gzdoom_args}', shell=True)
+# subprocess.call(f'gzdoom {gzdoom_args}', shell=True)
