@@ -79,4 +79,4 @@ logging.debug(f"gzdoom_args: {gzdoom_args}")
 gzdoom_args = profile_to_cmdline(active_profile) + f" {gzdoom_args}"
 logging.debug(gzdoom_args)
 
-# subprocess.call(f'gzdoom {gzdoom_args}', shell=True)
+subprocess.call(f'gzdoom {gzdoom_args}', shell=True)
